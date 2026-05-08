@@ -46,6 +46,9 @@ public class Producto {
     @Column(name = "stock_critico")
     private Double stockCritico;
 
+    @Column(name = "activo")
+    private boolean activo = true;
+
     @JsonIgnore 
     @ManyToOne
     @JoinColumn(name = "venta_id")

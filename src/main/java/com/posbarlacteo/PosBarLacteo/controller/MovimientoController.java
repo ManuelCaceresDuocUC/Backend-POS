@@ -1,11 +1,15 @@
 package com.posbarlacteo.PosBarLacteo.controller;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posbarlacteo.PosBarLacteo.model.Venta;
@@ -13,15 +17,31 @@ import com.posbarlacteo.PosBarLacteo.repository.VentaRepository;
 
 @RestController
 @RequestMapping("/api/movimientos")
-@CrossOrigin(origins = "http://localhost:5173") // Esto elimina el error de CORS
+@CrossOrigin(origins = "http://localhost:5173")
 public class MovimientoController {
 
     @Autowired
     private VentaRepository ventaRepository;
 
     @GetMapping
-    public List<Venta> obtenerHistorial() {
-        // Retorna todas las ventas guardadas en la BD
-        return ventaRepository.findAll();
+    public List<Venta> obtenerHistorial(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin
+    ) {
+        // Si no mandan fechaInicio, asumimos que quieren ver las ventas de HOY
+        if (fechaInicio == null) {
+            fechaInicio = LocalDate.now();
+            fechaFin = LocalDate.now();
+        } 
+        // Si mandan inicio pero no fin, asumimos que quieren ver un solo día específico
+        else if (fechaFin == null) {
+            fechaFin = fechaInicio;
+        }
+
+        // Convertimos a LocalDateTime: Inicio del día (00:00:00) y Fin del día (23:59:59)
+        LocalDateTime inicioDelDia = fechaInicio.atStartOfDay();
+        LocalDateTime finDelDia = fechaFin.atTime(23, 59, 59);
+
+        return ventaRepository.findByFechaHoraBetween(inicioDelDia, finDelDia);
     }
 }

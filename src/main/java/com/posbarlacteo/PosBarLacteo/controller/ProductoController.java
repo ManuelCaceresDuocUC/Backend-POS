@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,13 +36,17 @@ public class ProductoController {
     @Autowired
     private RecetaRepository recetaRepository;
     @GetMapping
-    public List<Producto> obtenerTodos() {
-        return productoRepository.findAll();
+    public Page<Producto> obtenerTodos(@RequestParam(defaultValue = "0") int page, 
+                                    @RequestParam(defaultValue = "20") int size) {
+        return productoRepository.findByActivoTrue(PageRequest.of(page, size));
     }
 
     @DeleteMapping("/{id}")
     public void eliminar(@PathVariable Long id) {
-        productoRepository.deleteById(id);
+        productoRepository.findById(id).ifPresent(p -> {
+            p.setActivo(false);
+            productoRepository.save(p);
+        });
     }
     
     @PutMapping("/{id}")
