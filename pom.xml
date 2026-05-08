@@ -70,6 +70,8 @@
 			<groupId>posintegradogetnet</groupId>
 			<artifactId>POSIntegradoGetnet</artifactId>
 			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/POSIntegradoGetnet-1.0.0.jar</systemPath>
 		</dependency>
 
 		<dependency>
@@ -112,6 +114,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<includeSystemScope>true</includeSystemScope>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
