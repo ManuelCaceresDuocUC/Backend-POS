@@ -9,10 +9,10 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // Aplica a todos los controladores (rutas)
-                .allowedOriginPatterns("*") // Permite que cualquier URL (como tu S3) se conecte
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH") // Permite todos los métodos HTTP
+        registry.addMapping("/**") 
+                .allowedOrigins("https://sistema.kuyval.cl") // <-- Tu frontend exacto (Sin barra al final)
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH") 
                 .allowedHeaders("*")
-                .allowCredentials(false);
+                .allowCredentials(true); // <-- Cambiado a true para permitir el flujo de login
     }
 }
