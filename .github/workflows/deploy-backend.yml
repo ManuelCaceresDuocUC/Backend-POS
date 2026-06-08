@@ -1,9 +1,9 @@
-name: Build and Push Backend Image
+name: Build, Push and Deploy Backend Image
 
 on:
   push:
     branches:
-      - main # Asegúrate de que coincida con tu rama (main o master)
+      - main # Asegúrate de que coincida con tu rama
 
 jobs:
   build-and-push:
@@ -24,12 +24,43 @@ jobs:
       - name: Iniciar Sesión en Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }} # 👈 Corregido a punto (.)
-          password: ${{ secrets.DOCKERHUB_TOKEN }}    # 👈 Corregido a punto (.)
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Construir y Subir Imagen Docker
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/backend-pos:latest # 👈 Corregido a punto (.)
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/backend-pos:latest
+
+  deploy:
+    needs: build-and-push # Espera a que la imagen se suba a Docker Hub primero
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar en EC2 vía SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_BACKEND_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_BACKEND_KEY }}
+          script: |
+            # 1. Iniciar sesión en Docker Hub desde el EC2 (por si tu repo es privado)
+            sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            
+            # 2. Detener y eliminar el contenedor viejo si es que ya existía corriendo
+            sudo docker stop backend-container || true
+            sudo docker rm backend-container || true
+            
+            # 3. Limpiar imágenes viejas para no llenar el disco del EC2
+            sudo docker image prune -f || true
+            
+            # 4. Descargar la nueva versión de la imagen
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/backend-pos:latest
+            
+            # 5. Encender el contenedor con la regla de auto-reinicio permanente (--restart always)
+            sudo docker run -d \
+              --name backend-container \
+              -p 8080:8080 \
+              --restart always \
+              ${{ secrets.DOCKERHUB_USERNAME }}/backend-pos:latest
