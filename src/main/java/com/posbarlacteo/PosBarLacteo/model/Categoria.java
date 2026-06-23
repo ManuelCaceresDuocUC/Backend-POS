@@ -9,20 +9,16 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "pos_usuarios")
+@Table(name = "pos_categorias")
 @Data
-public class Usuario {
+public class Categoria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "usuario", unique = true)
-    private String usuario;
+    @Column(nullable = false, unique = true)
+    private String nombre; // Ej: "Lácteos", "Sándwiches", "Bebidas"
 
-    @Column(name = "contrasena")
-    private String contrasena;
-
-    // ✨ NUEVO CAMPO: Agregamos el rol para la seguridad de React
-    @Column(name = "rol", nullable = false)
-    private String rol = "vendedor"; // Por defecto, todos nacen como vendedores
+    @Column(name = "activo")
+    private boolean activo = true;
 }

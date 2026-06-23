@@ -57,4 +57,8 @@ public class Producto {
     @JsonManagedReference
     @OneToMany(mappedBy = "productoPrincipal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Receta> receta;
+
+    @ManyToOne
+    @JoinColumn(name = "categoria_id")
+    private Categoria categoria;
 }

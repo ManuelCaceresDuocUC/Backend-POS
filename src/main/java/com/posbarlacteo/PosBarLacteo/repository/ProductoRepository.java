@@ -18,4 +18,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     @Query("SELECT DISTINCT p FROM Producto p LEFT JOIN FETCH p.receta r LEFT JOIN FETCH r.insumo WHERE p.activo = true")
     Page<Producto> findByActivoTrue(Pageable pageable);
     Optional<Producto> findByCodigoBarras(String codigoBarras);
+    Page<Producto> findByActivoTrueAndCategoriaId(Long categoriaId, Pageable pageable);
+    @Query("SELECT COALESCE(SUM(p.stock * p.precio), 0.0) FROM Producto p WHERE p.activo = true")
+    Double calcularValorTotalInventario();
 }

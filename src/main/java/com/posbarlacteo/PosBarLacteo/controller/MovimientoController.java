@@ -17,7 +17,11 @@ import com.posbarlacteo.PosBarLacteo.repository.VentaRepository;
 
 @RestController
 @RequestMapping("/api/movimientos")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+    "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com", // Producción AWS
+    "http://localhost:5173",                                             // PC Local
+    "http://192.168.100.85:5173"                                         // Tu Celular
+})
 public class MovimientoController {
 
     @Autowired

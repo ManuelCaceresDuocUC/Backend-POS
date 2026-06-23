@@ -26,7 +26,11 @@ import com.posbarlacteo.PosBarLacteo.repository.RecetaRepository;
 
 import jakarta.transaction.Transactional;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+    "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com", // Producción AWS
+    "http://localhost:5173",                                             // PC Local
+    "http://192.168.100.85:5173"                                         // Tu Celular
+})
 @RestController
 @RequestMapping("/api/productos")
 
@@ -36,8 +40,18 @@ public class ProductoController {
     @Autowired
     private RecetaRepository recetaRepository;
     @GetMapping
-    public Page<Producto> obtenerTodos(@RequestParam(defaultValue = "0") int page, 
-                                    @RequestParam(defaultValue = "20") int size) {
+    public Page<Producto> obtenerTodos(
+            // ✨ NUEVO: Parámetro opcional para filtrar
+            @RequestParam(required = false) Long categoriaId, 
+            @RequestParam(defaultValue = "0") int page, 
+            @RequestParam(defaultValue = "20") int size) {
+        
+        // Si el frontend nos manda una categoría, usamos el nuevo filtro
+        if (categoriaId != null) {
+            return productoRepository.findByActivoTrueAndCategoriaId(categoriaId, PageRequest.of(page, size));
+        }
+        
+        // Si no mandan categoría, devolvemos todo como antes
         return productoRepository.findByActivoTrue(PageRequest.of(page, size));
     }
 

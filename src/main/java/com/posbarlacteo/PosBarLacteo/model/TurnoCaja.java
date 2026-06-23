@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "turnos_caja")
 public class TurnoCaja {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,6 +32,19 @@ public class TurnoCaja {
 
     @Column(name = "fecha_cierre")
     private LocalDateTime fechaCierre;
+
+    // ✨ NUEVO: Campos para llevar el control financiero de la caja
+    @Column(name = "ventas_efectivo")
+    private BigDecimal ventasEfectivo = BigDecimal.ZERO;
+
+    @Column(name = "ventas_tarjeta")
+    private BigDecimal ventasTarjeta = BigDecimal.ZERO;
+
+    @Column(name = "ingresos_extra")
+    private BigDecimal ingresosExtra = BigDecimal.ZERO;
+
+    @Column(name = "retiros")
+    private BigDecimal retiros = BigDecimal.ZERO;
 
     // --- Constructor vacío requerido por JPA ---
     public TurnoCaja() {
@@ -85,5 +98,39 @@ public class TurnoCaja {
 
     public void setFechaCierre(LocalDateTime fechaCierre) {
         this.fechaCierre = fechaCierre;
+    }
+
+    // ✨ NUEVO: Getters y Setters de los nuevos campos
+
+    public BigDecimal getVentasEfectivo() {
+        return ventasEfectivo;
+    }
+
+    public void setVentasEfectivo(BigDecimal ventasEfectivo) {
+        this.ventasEfectivo = ventasEfectivo;
+    }
+
+    public BigDecimal getVentasTarjeta() {
+        return ventasTarjeta;
+    }
+
+    public void setVentasTarjeta(BigDecimal ventasTarjeta) {
+        this.ventasTarjeta = ventasTarjeta;
+    }
+
+    public BigDecimal getIngresosExtra() {
+        return ingresosExtra;
+    }
+
+    public void setIngresosExtra(BigDecimal ingresosExtra) {
+        this.ingresosExtra = ingresosExtra;
+    }
+
+    public BigDecimal getRetiros() {
+        return retiros;
+    }
+
+    public void setRetiros(BigDecimal retiros) {
+        this.retiros = retiros;
     }
 }

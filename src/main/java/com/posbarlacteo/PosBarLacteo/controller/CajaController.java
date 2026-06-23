@@ -1,4 +1,4 @@
-package com.posbarlacteo.PosBarLacteo.controller; // Ajusta el paquete según tu proyecto
+package com.posbarlacteo.PosBarLacteo.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -7,33 +7,39 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam; // ✨ NUEVO IMPORT
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posbarlacteo.PosBarLacteo.dto.AperturaCajaDTO;
 import com.posbarlacteo.PosBarLacteo.dto.EstadoCajaDTO;
+import com.posbarlacteo.PosBarLacteo.dto.MovimientoCajaDTO; 
+import com.posbarlacteo.PosBarLacteo.dto.ResumenCajaDTO;
 import com.posbarlacteo.PosBarLacteo.service.CajaService;
 
 @RestController
 @RequestMapping("/api/caja")
-// 🔥 Permitimos explícitamente que tu S3 se conecte aquí
-@CrossOrigin(origins = "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com")
+@CrossOrigin(origins = {
+    "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com", 
+    "http://localhost:5173",                                             
+    "http://192.168.100.85:5173"                                         
+})
 public class CajaController {
 
     @Autowired
     private CajaService cajaService;
 
     @GetMapping("/estado")
-    public ResponseEntity<EstadoCajaDTO> obtenerEstadoCaja() {
-        Long cajeroId = 1L; // TODO: Cambiar por ID del usuario logueado en el futuro
-        boolean estaAbierta = cajaService.tieneCajaAbierta(cajeroId);
+    // ✨ Pedimos el usuarioId por la URL
+    public ResponseEntity<EstadoCajaDTO> obtenerEstadoCaja(@RequestParam Long usuarioId) {
+        boolean estaAbierta = cajaService.tieneCajaAbierta(usuarioId);
         return ResponseEntity.ok(new EstadoCajaDTO(estaAbierta));
     }
 
     @PostMapping("/abrir")
-    public ResponseEntity<?> abrirCaja(@RequestBody AperturaCajaDTO aperturaDTO) {
-        Long cajeroId = 1L; 
+    // ✨ Pedimos el usuarioId por la URL además del DTO en el body
+    public ResponseEntity<?> abrirCaja(@RequestParam Long usuarioId, @RequestBody AperturaCajaDTO aperturaDTO) {
         try {
-            cajaService.abrirCaja(cajeroId, aperturaDTO.getMontoInicial());
+            cajaService.abrirCaja(usuarioId, aperturaDTO.getMontoInicial());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -41,11 +47,30 @@ public class CajaController {
     }
 
     @PostMapping("/cerrar")
-    public ResponseEntity<?> cerrarCaja() {
-        Long cajeroId = 1L; 
+    public ResponseEntity<?> cerrarCaja(@RequestParam Long usuarioId) {
         try {
-            cajaService.cerrarCaja(cajeroId);
+            cajaService.cerrarCaja(usuarioId);
             return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/movimiento")
+    public ResponseEntity<?> registrarMovimiento(@RequestParam Long usuarioId, @RequestBody MovimientoCajaDTO movimientoDTO) {
+        try {
+            cajaService.registrarMovimiento(usuarioId, movimientoDTO);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/resumen")
+    public ResponseEntity<?> obtenerResumen(@RequestParam Long usuarioId) {
+        try {
+            ResumenCajaDTO resumen = cajaService.obtenerResumen(usuarioId);
+            return ResponseEntity.ok(resumen);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

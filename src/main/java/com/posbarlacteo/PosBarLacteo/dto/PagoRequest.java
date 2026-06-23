@@ -10,4 +10,6 @@ import lombok.Data;
 public class PagoRequest {
     private int monto;
     private List<ItemVenta> items;
+    
+    private Long usuarioId;
 }
