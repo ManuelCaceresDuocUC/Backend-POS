@@ -47,9 +47,16 @@ jobs:
             docker rm backend-app || true
             
             # Encender el contenedor
+            # Encender el contenedor
             docker run -d -p 3000:3000 --name backend-app \
               -e DB_HOST="mi-base-datos-lab.cv1y27electk.us-east-1.rds.amazonaws.com" \
               -e DB_USER="admin" \
               -e DB_PASSWORD="Password123!" \
-              -e DB_NAME="tu_nombre_de_base_de_datos" \
+              -e DB_NAME="posbarlacteo" \
               ${{ secrets.DOCKER_USERNAME }}/mi-backend:latest
+            
+            # Darle 10 segundos al backend para intentar conectar a la base de datos
+            sleep 10
+            
+            # Imprimir los logs del backend para ver si la conexión fue exitosa
+            docker logs backend-app
