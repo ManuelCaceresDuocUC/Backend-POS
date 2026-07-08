@@ -1,17 +1,7 @@
-# ETAPA 1: Construcción
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+FROM node:20-alpine
 WORKDIR /app
-
-COPY pom.xml .
-COPY src ./src
-COPY libs ./libs 
-
-RUN mvn clean package -DskipTests
-
-# ETAPA 2: Ejecución
-FROM eclipse-temurin:17-jre-alpine
-WORKDIR /app
-
-COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY package*.json ./
+RUN npm install --production
+COPY . .
+EXPOSE 3000
+CMD ["npm", "start"]

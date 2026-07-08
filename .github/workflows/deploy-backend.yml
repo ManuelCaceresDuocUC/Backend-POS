@@ -1,66 +1,49 @@
-name: Build, Push and Deploy Backend Image
+name: Deploy Backend to EC2 with Docker Hub
 
 on:
   push:
     branches:
-      - main # Asegúrate de que coincida con tu rama
+      - main # Cambia a master si tu rama principal se llama así
 
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Descargar Código
         uses: actions/checkout@v4
 
-      - name: Configurar Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Compilar Jar con Maven
-        run: mvn clean package -DskipTests
-
-      - name: Iniciar Sesión en Docker Hub
+      - name: Iniciar sesión en Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Construir y Subir Imagen Docker
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/backend-pos:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/mi-backend:latest
 
-  deploy:
-    needs: build-and-push # Espera a que la imagen se suba a Docker Hub primero
-    runs-on: ubuntu-latest
-    steps:
-      - name: Desplegar en EC2 vía SSH
+      - name: Desplegar en EC2 de AWS Academy
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_BACKEND_HOST }}
-          username: ubuntu
+          username: ${{ secrets.EC2_BACKEND_USER }}
           key: ${{ secrets.EC2_BACKEND_KEY }}
           script: |
-            # 1. Iniciar sesión en Docker Hub desde el EC2 (por si tu repo es privado)
-            sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            # Descargar la nueva versión desde Docker Hub
+            docker pull ${{ secrets.DOCKER_USERNAME }}/mi-backend:latest
             
-            # 2. Detener y eliminar el contenedor viejo si es que ya existía corriendo
-            sudo docker stop backend-container || true
-            sudo docker rm backend-container || true
+            # Detener contenedores anteriores para liberar el puerto
+            docker stop backend-app || true
+            docker rm backend-app || true
             
-            # 3. Limpiar imágenes viejas para no llenar el disco del EC2
-            sudo docker image prune -f || true
-            
-            # 4. Descargar la nueva versión de la imagen
-            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/backend-pos:latest
-            
-            # 5. Encender el contenedor con la regla de auto-reinicio permanente (--restart always)
-            sudo docker run -d \
-              --name backend-container \
-              -p 8080:8080 \
-              --restart always \
-              ${{ secrets.DOCKERHUB_USERNAME }}/backend-pos:latest
+            # Encender el contenedor inyectando los datos de la base de datos RDS de CloudFormation
+            # NOTA: Mapeamos el puerto 3000 de la EC2 al 3000 del contenedor (ajústalo si usas otro)
+            docker run -d -p 3000:3000 --name backend-app \
+              -e DB_HOST="mi-base-datos-lab.cv1y27electk.us-east-1.rds.amazonaws.com" \
+              -e DB_USER="admin" \
+              -e DB_PASSWORD="Password123!" \
+              -e DB_NAME="tu_nombre_de_base_de_datos" \
+              ${{ secrets.DOCKER_USERNAME }}/mi-backend:latest
