@@ -29,6 +29,7 @@ public class MovimientoController {
 
     @GetMapping
     public List<Venta> obtenerHistorial(
+            @RequestParam(defaultValue = "1") Long empresaId, // ✨ 1. Recibimos el ID de la empresa
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin
     ) {
@@ -46,6 +47,7 @@ public class MovimientoController {
         LocalDateTime inicioDelDia = fechaInicio.atStartOfDay();
         LocalDateTime finDelDia = fechaFin.atTime(23, 59, 59);
 
-        return ventaRepository.findByFechaHoraBetween(inicioDelDia, finDelDia);
+        // ✨ 2. Pasamos el empresaId al repositorio
+        return ventaRepository.findByEmpresaIdAndFechaHoraBetween(empresaId, inicioDelDia, finDelDia);
     }
 }

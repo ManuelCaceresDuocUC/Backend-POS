@@ -12,4 +12,13 @@ public class PagoRequest {
     private List<ItemVenta> items;
     
     private Long usuarioId;
+    private Long empresaId; // ✨ Agrega esto si no existe
+
+    public Long getEmpresaId() {
+        return empresaId;
+    }
+
+    public void setEmpresaId(Long empresaId) {
+        this.empresaId = empresaId;
+    }
 }

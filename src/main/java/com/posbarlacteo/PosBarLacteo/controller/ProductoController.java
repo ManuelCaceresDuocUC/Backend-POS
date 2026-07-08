@@ -41,18 +41,18 @@ public class ProductoController {
     private RecetaRepository recetaRepository;
     @GetMapping
     public Page<Producto> obtenerTodos(
-            // ✨ NUEVO: Parámetro opcional para filtrar
             @RequestParam(required = false) Long categoriaId, 
+            @RequestParam(defaultValue = "1") Long empresaId, // ✨ NUEVO: Atrapamos la empresa
             @RequestParam(defaultValue = "0") int page, 
             @RequestParam(defaultValue = "20") int size) {
         
-        // Si el frontend nos manda una categoría, usamos el nuevo filtro
+        // Si el frontend nos manda una categoría, usamos el filtro con empresa
         if (categoriaId != null) {
-            return productoRepository.findByActivoTrueAndCategoriaId(categoriaId, PageRequest.of(page, size));
+            return productoRepository.findByActivoTrueAndCategoriaIdAndEmpresaId(categoriaId, empresaId, PageRequest.of(page, size));
         }
         
-        // Si no mandan categoría, devolvemos todo como antes
-        return productoRepository.findByActivoTrue(PageRequest.of(page, size));
+        // Si no mandan categoría, devolvemos todo el inventario de ESA empresa
+        return productoRepository.findByActivoTrueAndEmpresaId(empresaId, PageRequest.of(page, size));
     }
 
     @DeleteMapping("/{id}")

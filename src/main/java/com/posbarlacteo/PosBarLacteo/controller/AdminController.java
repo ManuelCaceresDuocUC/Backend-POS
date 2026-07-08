@@ -69,7 +69,7 @@ public class AdminController {
     // ==========================================
 
     @GetMapping("/metricas")
-    public ResponseEntity<Map<String, Object>> obtenerMetricas() {
+    public ResponseEntity<Map<String, Object>> obtenerMetricas(@RequestParam(defaultValue = "1") Long empresaId) {
         Map<String, Object> metricas = new HashMap<>();
 
         // 🕒 Configuración de tiempos reales dinámicos
@@ -79,10 +79,16 @@ public class AdminController {
         LocalDateTime inicioMes = hoy.withDayOfMonth(1).atStartOfDay(); 
 
         // 📊 Consultas directas a la Base de Datos
-        Double ventasHoy = ventaRepository.sumarVentasDelDia(inicioHoy, finHoy);
-        Double ventasMes = ventaRepository.sumarVentasDelMes(inicioMes);
-        Double ticketPromedio = ventaRepository.obtenerTicketPromedioDelDia(inicioHoy, finHoy);
-        Double capitalInventario = productoRepository.calcularValorTotalInventario();
+        Double ventasHoy = ventaRepository.sumarVentasDelDia(empresaId, inicioHoy, finHoy);
+        Double ventasMes = ventaRepository.sumarVentasDelMes(empresaId, inicioMes);
+        Double ticketPromedio = ventaRepository.obtenerTicketPromedioDelDia(empresaId, inicioHoy, finHoy);
+        Double costoInventario = productoRepository.calcularValorTotalInventario(empresaId);
+        
+        // Validamos nulos por si no hay ventas aún
+        ventasHoy = (ventasHoy != null) ? ventasHoy : 0.0;
+        ventasMes = (ventasMes != null) ? ventasMes : 0.0;
+        ticketPromedio = (ticketPromedio != null) ? ticketPromedio : 0.0;
+        costoInventario = (costoInventario != null) ? costoInventario : 0.0;
 
         // 🇨🇱 Cálculo del IVA chileno (19%)
         Double ivaMesCalculado = ventasMes * 19 / 119;
@@ -91,13 +97,16 @@ public class AdminController {
         metricas.put("ventasHoy", Math.round(ventasHoy));
         metricas.put("ivaMes", Math.round(ivaMesCalculado));
         metricas.put("ticketPromedio", Math.round(ticketPromedio));
-        metricas.put("costoInventario", Math.round(capitalInventario));
-
+        metricas.put("costoInventario", Long.valueOf(Math.round(costoInventario)));
+        
         return ResponseEntity.ok(metricas);
     }
 
     @GetMapping("/productos-mas-vendidos")
-    public ResponseEntity<List<Map<String, Object>>> obtenerMasVendidos(@RequestParam(defaultValue = "dia") String periodo) {
+    public ResponseEntity<List<Map<String, Object>>> obtenerMasVendidos(
+            @RequestParam(defaultValue = "dia") String periodo,
+            @RequestParam(defaultValue = "1") Long empresaId) { 
+        
         LocalDateTime desde;
         LocalDate hoy = LocalDate.now();
 
@@ -116,7 +125,7 @@ public class AdminController {
         }
 
         // Pedimos solo los 5 primeros resultados de la base de datos
-        List<Object[]> resultados = ventaRepository.obtenerProductosMasVendidos(desde, PageRequest.of(0, 5));
+        List<Object[]> resultados = ventaRepository.obtenerProductosMasVendidos(empresaId, desde, PageRequest.of(0, 5));
         
         // Mapeamos el resultado de Object[] a un JSON limpio [{nombre: "Lacteo", total: 12}]
         List<Map<String, Object>> listaFinal = new ArrayList<>();

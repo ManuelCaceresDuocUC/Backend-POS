@@ -36,10 +36,14 @@ public class CajaController {
     }
 
     @PostMapping("/abrir")
-    // ✨ Pedimos el usuarioId por la URL además del DTO en el body
-    public ResponseEntity<?> abrirCaja(@RequestParam Long usuarioId, @RequestBody AperturaCajaDTO aperturaDTO) {
+    // ✨ Ahora pedimos usuarioId Y empresaId por la URL
+    public ResponseEntity<?> abrirCaja(
+            @RequestParam Long usuarioId, 
+            @RequestParam(defaultValue = "1") Long empresaId, // ✨ Agregamos empresaId
+            @RequestBody AperturaCajaDTO aperturaDTO) {
         try {
-            cajaService.abrirCaja(usuarioId, aperturaDTO.getMontoInicial());
+            // ✨ Le pasamos el empresaId al servicio
+            cajaService.abrirCaja(usuarioId, empresaId, aperturaDTO.getMontoInicial());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
