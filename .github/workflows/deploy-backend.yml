@@ -46,13 +46,12 @@ jobs:
             docker stop backend-app || true
             docker rm backend-app || true
             
-            # Encender el contenedor
-            # Encender el contenedor
+         
+            # Encender el contenedor (Con variables nativas de Spring Boot)
             docker run -d -p 3000:3000 --name backend-app \
-              -e DB_HOST="mi-base-datos-lab.cv1y27electk.us-east-1.rds.amazonaws.com" \
-              -e DB_USER="admin" \
-              -e DB_PASSWORD="Password123!" \
-              -e DB_NAME="posbarlacteo" \
+              -e SPRING_DATASOURCE_URL="jdbc:mysql://mi-base-datos-lab.cv1y27electk.us-east-1.rds.amazonaws.com:3306/posbarlacteo" \
+              -e SPRING_DATASOURCE_USERNAME="admin" \
+              -e SPRING_DATASOURCE_PASSWORD="Password123!" \
               ${{ secrets.DOCKER_USERNAME }}/mi-backend:latest
             
             # Darle 10 segundos al backend para intentar conectar a la base de datos
