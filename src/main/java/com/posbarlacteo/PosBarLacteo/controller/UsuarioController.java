@@ -22,7 +22,9 @@ import com.posbarlacteo.PosBarLacteo.repository.UsuarioRepository;
 @RestController
 @CrossOrigin(origins = {
     "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com", // Producción AWS
-    "http://localhost:5173",                                             // PC Local
+    "http://localhost:5173",
+    "http://34.203.91.138",
+                                                 // PC Local
     "http://192.168.100.85:5173"                                         // Tu Celular
 })
 @RequestMapping("/api/usuarios")

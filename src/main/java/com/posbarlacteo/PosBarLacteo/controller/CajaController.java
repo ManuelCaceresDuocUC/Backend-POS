@@ -20,7 +20,8 @@ import com.posbarlacteo.PosBarLacteo.service.CajaService;
 @RequestMapping("/api/caja")
 @CrossOrigin(origins = {
     "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com", 
-    "http://localhost:5173",                                             
+    "http://localhost:5173",
+    "http://34.203.91.138",                                             
     "http://192.168.100.85:5173"                                         
 })
 public class CajaController {
