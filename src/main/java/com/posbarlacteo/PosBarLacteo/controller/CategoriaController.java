@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posbarlacteo.PosBarLacteo.model.Categoria;
@@ -32,7 +33,11 @@ public class CategoriaController {
 
     // Obtener todas las categorías activas
     @GetMapping
-    public List<Categoria> obtenerTodas() {
+    public List<Categoria> obtenerTodas(@RequestParam(required = false) Long empresaId) {
+        if (empresaId != null) {
+            // ✨ Ahora sí le entregamos a cada empresa únicamente sus datos
+            return categoriaRepository.findByEmpresaIdAndActivoTrue(empresaId);
+        }
         return categoriaRepository.findByActivoTrue();
     }
 

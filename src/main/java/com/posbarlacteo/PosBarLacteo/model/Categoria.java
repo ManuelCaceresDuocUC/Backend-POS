@@ -19,7 +19,7 @@ public class Categoria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String nombre; // Ej: "Lácteos", "Sándwiches", "Bebidas"
 
     @Column(name = "activo")

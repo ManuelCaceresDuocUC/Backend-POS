@@ -10,6 +10,9 @@ import com.posbarlacteo.PosBarLacteo.model.Categoria;
 @Repository
 public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
     
-    // Método para traer solo las categorías que no han sido "eliminadas"
+    // Método para traer todas las activas (uso administrativo global)
     List<Categoria> findByActivoTrue();
+
+    // ✨ NUEVO: Método que filtra por Empresa y que la categoría esté activa
+    List<Categoria> findByEmpresaIdAndActivoTrue(Long empresaId);
 }
