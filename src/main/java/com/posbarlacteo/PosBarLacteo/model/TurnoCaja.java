@@ -36,7 +36,6 @@ public class TurnoCaja {
     @Column(name = "fecha_cierre")
     private LocalDateTime fechaCierre;
 
-    // ✨ NUEVO: Campos para llevar el control financiero de la caja
     @Column(name = "ventas_efectivo")
     private BigDecimal ventasEfectivo = BigDecimal.ZERO;
 
@@ -49,99 +48,65 @@ public class TurnoCaja {
     @Column(name = "retiros")
     private BigDecimal retiros = BigDecimal.ZERO;
 
+    // ✨ NUEVO: Campos para el cierre y cuadratura de caja
+    @Column(name = "total_sistema")
+    private BigDecimal totalSistema;
+
+    @Column(name = "total_real_fisico")
+    private BigDecimal totalRealFisico;
+
+    @Column(name = "diferencia")
+    private BigDecimal diferencia;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
-    // --- Constructor vacío requerido por JPA ---
     public TurnoCaja() {
     }
 
     // --- Getters y Setters ---
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getCajeroId() { return cajeroId; }
+    public void setCajeroId(Long cajeroId) { this.cajeroId = cajeroId; }
 
-    public Long getCajeroId() {
-        return cajeroId;
-    }
+    public BigDecimal getMontoApertura() { return montoApertura; }
+    public void setMontoApertura(BigDecimal montoApertura) { this.montoApertura = montoApertura; }
 
-    public void setCajeroId(Long cajeroId) {
-        this.cajeroId = cajeroId;
-    }
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
 
-    public BigDecimal getMontoApertura() {
-        return montoApertura;
-    }
+    public LocalDateTime getFechaApertura() { return fechaApertura; }
+    public void setFechaApertura(LocalDateTime fechaApertura) { this.fechaApertura = fechaApertura; }
 
-    public void setMontoApertura(BigDecimal montoApertura) {
-        this.montoApertura = montoApertura;
-    }
+    public LocalDateTime getFechaCierre() { return fechaCierre; }
+    public void setFechaCierre(LocalDateTime fechaCierre) { this.fechaCierre = fechaCierre; }
 
-    public String getEstado() {
-        return estado;
-    }
+    public BigDecimal getVentasEfectivo() { return ventasEfectivo; }
+    public void setVentasEfectivo(BigDecimal ventasEfectivo) { this.ventasEfectivo = ventasEfectivo; }
 
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
+    public BigDecimal getVentasTarjeta() { return ventasTarjeta; }
+    public void setVentasTarjeta(BigDecimal ventasTarjeta) { this.ventasTarjeta = ventasTarjeta; }
 
-    public LocalDateTime getFechaApertura() {
-        return fechaApertura;
-    }
+    public BigDecimal getIngresosExtra() { return ingresosExtra; }
+    public void setIngresosExtra(BigDecimal ingresosExtra) { this.ingresosExtra = ingresosExtra; }
 
-    public void setFechaApertura(LocalDateTime fechaApertura) {
-        this.fechaApertura = fechaApertura;
-    }
+    public BigDecimal getRetiros() { return retiros; }
+    public void setRetiros(BigDecimal retiros) { this.retiros = retiros; }
 
-    public LocalDateTime getFechaCierre() {
-        return fechaCierre;
-    }
+    // ✨ Getters y Setters de los nuevos campos de cuadratura
+    public BigDecimal getTotalSistema() { return totalSistema; }
+    public void setTotalSistema(BigDecimal totalSistema) { this.totalSistema = totalSistema; }
 
-    public void setFechaCierre(LocalDateTime fechaCierre) {
-        this.fechaCierre = fechaCierre;
-    }
+    public BigDecimal getTotalRealFisico() { return totalRealFisico; }
+    public void setTotalRealFisico(BigDecimal totalRealFisico) { this.totalRealFisico = totalRealFisico; }
 
-    // ✨ NUEVO: Getters y Setters de los nuevos campos
-
-    public BigDecimal getVentasEfectivo() {
-        return ventasEfectivo;
-    }
-
-    public void setVentasEfectivo(BigDecimal ventasEfectivo) {
-        this.ventasEfectivo = ventasEfectivo;
-    }
-
-    public BigDecimal getVentasTarjeta() {
-        return ventasTarjeta;
-    }
-
-    public void setVentasTarjeta(BigDecimal ventasTarjeta) {
-        this.ventasTarjeta = ventasTarjeta;
-    }
-
-    public BigDecimal getIngresosExtra() {
-        return ingresosExtra;
-    }
-
-    public void setIngresosExtra(BigDecimal ingresosExtra) {
-        this.ingresosExtra = ingresosExtra;
-    }
-
-    public BigDecimal getRetiros() {
-        return retiros;
-    }
-
-    public void setRetiros(BigDecimal retiros) {
-        this.retiros = retiros;
-    }
+    public BigDecimal getDiferencia() { return diferencia; }
+    public void setDiferencia(BigDecimal diferencia) { this.diferencia = diferencia; }
 
     public Empresa getEmpresa() { return empresa; }
     public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
-    
 }

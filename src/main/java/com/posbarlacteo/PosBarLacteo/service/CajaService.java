@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.posbarlacteo.PosBarLacteo.dto.CierreCajaDTO; // ✨ NUEVO IMPORT
 import com.posbarlacteo.PosBarLacteo.dto.MovimientoCajaDTO;
 import com.posbarlacteo.PosBarLacteo.dto.ResumenCajaDTO;
 import com.posbarlacteo.PosBarLacteo.model.Empresa;
@@ -21,7 +22,6 @@ public class CajaService {
     @Autowired
     private TurnoCajaRepository turnoCajaRepository;
 
-    // ✨ Movimos los repositorios ADENTRO de la clase
     @Autowired
     private UsuarioRepository usuarioRepository;
 
@@ -32,40 +32,45 @@ public class CajaService {
         return turnoCajaRepository.findByCajeroIdAndEstado(cajeroId, "ABIERTA").isPresent();
     }
 
-    // ✨ Cambiamos Double a BigDecimal
     public void abrirCaja(Long usuarioId, Long empresaId, BigDecimal montoInicial) {
-        // 1. Validar que el usuario no tenga ya una caja abierta
         if (tieneCajaAbierta(usuarioId)) {
             throw new RuntimeException("El usuario ya tiene una caja abierta");
         }
 
-        // 2. Buscar al usuario y a la empresa
         Usuario usuario = usuarioRepository.findById(usuarioId)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             
         Empresa empresa = empresaRepository.findById(empresaId)
             .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
 
-        // 3. Crear el turno y asignarle todo
         TurnoCaja turno = new TurnoCaja();
-        
-        // ✨ Ajustado a los nombres reales de tu entidad TurnoCaja:
-        turno.setCajeroId(usuarioId); // ⚠️ Si te da error aquí, cámbialo por: turno.setCajero(usuario);
+        turno.setCajeroId(usuarioId); 
         turno.setEmpresa(empresa); 
         turno.setFechaApertura(LocalDateTime.now());
-        turno.setMontoApertura(montoInicial); // ✨ Usamos montoApertura (basado en tu método de resumen)
-        turno.setEstado("ABIERTA"); // ✨ Corregido a "ABIERTA" (femenino) para que coincida con tus otros métodos
+        turno.setMontoApertura(montoInicial); 
+        turno.setEstado("ABIERTA"); 
 
-        // 4. Guardar
         turnoCajaRepository.save(turno);
     }
 
-    public void cerrarCaja(Long cajeroId) {
+    // ✨ AJUSTADO: Almacena los montos y la cuadratura provenientes de la interfaz
+    public void cerrarCaja(Long cajeroId, CierreCajaDTO cierreDTO) {
         TurnoCaja turnoAbierto = turnoCajaRepository.findByCajeroIdAndEstado(cajeroId, "ABIERTA")
                 .orElseThrow(() -> new RuntimeException("No hay ninguna caja abierta para este usuario."));
 
         turnoAbierto.setEstado("CERRADA");
         turnoAbierto.setFechaCierre(LocalDateTime.now());
+
+        // Guardado de la cuadratura y cierre
+        turnoAbierto.setTotalSistema(cierreDTO.getTotalSistema());
+        turnoAbierto.setTotalRealFisico(cierreDTO.getTotalRealFisico());
+        turnoAbierto.setDiferencia(cierreDTO.getDiferencia());
+
+        // Consolidación de los acumulados de operación de la jornada
+        if (cierreDTO.getVentasEfectivo() != null) turnoAbierto.setVentasEfectivo(cierreDTO.getVentasEfectivo());
+        if (cierreDTO.getVentasTarjeta() != null) turnoAbierto.setVentasTarjeta(cierreDTO.getVentasTarjeta());
+        if (cierreDTO.getIngresosExtra() != null) turnoAbierto.setIngresosExtra(cierreDTO.getIngresosExtra());
+        if (cierreDTO.getRetiros() != null) turnoAbierto.setRetiros(cierreDTO.getRetiros());
 
         turnoCajaRepository.save(turnoAbierto);
     }

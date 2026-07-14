@@ -7,10 +7,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam; // ✨ NUEVO IMPORT
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posbarlacteo.PosBarLacteo.dto.AperturaCajaDTO;
+import com.posbarlacteo.PosBarLacteo.dto.CierreCajaDTO; // ✨ NUEVO IMPORT
 import com.posbarlacteo.PosBarLacteo.dto.EstadoCajaDTO;
 import com.posbarlacteo.PosBarLacteo.dto.MovimientoCajaDTO; 
 import com.posbarlacteo.PosBarLacteo.dto.ResumenCajaDTO;
@@ -31,20 +32,17 @@ public class CajaController {
     private CajaService cajaService;
 
     @GetMapping("/estado")
-    // ✨ Pedimos el usuarioId por la URL
     public ResponseEntity<EstadoCajaDTO> obtenerEstadoCaja(@RequestParam Long usuarioId) {
         boolean estaAbierta = cajaService.tieneCajaAbierta(usuarioId);
         return ResponseEntity.ok(new EstadoCajaDTO(estaAbierta));
     }
 
     @PostMapping("/abrir")
-    // ✨ Ahora pedimos usuarioId Y empresaId por la URL
     public ResponseEntity<?> abrirCaja(
             @RequestParam Long usuarioId, 
-            @RequestParam(defaultValue = "1") Long empresaId, // ✨ Agregamos empresaId
+            @RequestParam(defaultValue = "1") Long empresaId, 
             @RequestBody AperturaCajaDTO aperturaDTO) {
         try {
-            // ✨ Le pasamos el empresaId al servicio
             cajaService.abrirCaja(usuarioId, empresaId, aperturaDTO.getMontoInicial());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -52,10 +50,13 @@ public class CajaController {
         }
     }
 
+    // ✨ AJUSTADO: Ahora recibe CierreCajaDTO mediante @RequestBody
     @PostMapping("/cerrar")
-    public ResponseEntity<?> cerrarCaja(@RequestParam Long usuarioId) {
+    public ResponseEntity<?> cerrarCaja(
+            @RequestParam Long usuarioId,
+            @RequestBody CierreCajaDTO cierreDTO) {
         try {
-            cajaService.cerrarCaja(usuarioId);
+            cajaService.cerrarCaja(usuarioId, cierreDTO);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
