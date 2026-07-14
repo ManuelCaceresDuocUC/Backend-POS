@@ -1,6 +1,8 @@
 package com.posbarlacteo.PosBarLacteo.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,10 +14,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RestController; // ✨ Importar el servicio
 
-import com.posbarlacteo.PosBarLacteo.model.Usuario;
+import com.posbarlacteo.PosBarLacteo.model.Usuario;                                    // ✨ Importar Map
 import com.posbarlacteo.PosBarLacteo.repository.UsuarioRepository;
+import com.posbarlacteo.PosBarLacteo.service.JwtService;
 
 
 
@@ -38,22 +41,30 @@ public class UsuarioController {
         return usuarioRepository.findByEmpresaId(empresaId);
     }
 
+    @Autowired
+    private JwtService jwtService; // Inyectar servicio
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Usuario loginRequest) {
-        // Buscamos al usuario por su nombre de usuario
         Optional<Usuario> usuarioOpt = usuarioRepository.findByUsuario(loginRequest.getUsuario());
 
         if (usuarioOpt.isPresent()) {
             Usuario usuario = usuarioOpt.get();
-            // Verificamos la contraseña (aquí podrías usar BCrypt más adelante)
             if (usuario.getContrasena().equals(loginRequest.getContrasena())) {
-                // Si es correcto, devolvemos el usuario (sin la contraseña por seguridad si prefieres)
                 usuario.setContrasena(null); 
-                return ResponseEntity.ok(usuario);
+                
+                // ✨ GENERAR TOKEN CON EL ROL SELLADO
+                String token = jwtService.generarToken(usuario.getUsuario(), usuario.getRol());
+
+                // Devolvemos el usuario junto con su token criptográfico
+                Map<String, Object> respuesta = new HashMap<>();
+                respuesta.put("usuario", usuario);
+                respuesta.put("token", token);
+                
+                return ResponseEntity.ok(respuesta);
             }
         }
         
-        // Si no existe o la clave falla, enviamos 401 (No autorizado)
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                              .body("Usuario o contraseña incorrectos");
     }
