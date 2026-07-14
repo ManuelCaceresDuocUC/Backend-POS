@@ -80,40 +80,33 @@ public class VentaService {
 
             List<Receta> ingredientes = recetaRepository.findByProductoPrincipalId(producto.getId());
 
-            // VALIDACIÓN DEL PRODUCTO PRINCIPAL
-            if (producto.getStock() < item.getCantidad()) {
-                throw new RuntimeException("Stock insuficiente para: " + producto.getDescripcion() + 
-                                           ". Tienes " + producto.getStock() + " y quieres vender " + item.getCantidad());
-            }
-
-            // Descontamos stock del producto principal
-            producto.setStock(producto.getStock() - item.getCantidad());
-            productoRepository.save(producto);
-
-            // VALIDACIÓN DE INSUMOS (RECETA)
-            if (!ingredientes.isEmpty()) {
+            // ✨ CORRECCIÓN AQUÍ: 
+            // Solo validamos el stock directo si el producto NO tiene ingredientes.
+            // Si tiene ingredientes, confiamos en la validación que ocurre más abajo.
+            if (ingredientes.isEmpty()) {
+                if (producto.getStock() < item.getCantidad()) {
+                    throw new RuntimeException("Stock insuficiente para: " + producto.getDescripcion() + 
+                                            ". Tienes " + producto.getStock() + " y quieres vender " + item.getCantidad());
+                }
+                // Descontamos stock del producto normal
+                producto.setStock(producto.getStock() - item.getCantidad());
+                productoRepository.save(producto);
+            } else {
+                // Si es receta, NO descontamos el stock del producto principal (porque es virtual).
+                // Solo validamos y descontamos los insumos (la lógica que ya tenías abajo).
                 for (Receta receta : ingredientes) {
                     Producto insumo = receta.getInsumo();
                     Double gastoTotal = receta.getCantidadUsada() * item.getCantidad();
 
                     if (insumo.getStock() < gastoTotal) {
                         throw new RuntimeException("¡Falta insumo! No hay suficiente '" + insumo.getDescripcion() + 
-                                                   "' para preparar '" + producto.getDescripcion() + "'. " +
-                                                   "Necesitas " + gastoTotal + " pero solo quedan " + insumo.getStock());
+                                                "' para preparar '" + producto.getDescripcion() + "'.");
                     }
 
                     insumo.setStock(insumo.getStock() - gastoTotal);
                     productoRepository.save(insumo);
                 }
             }
-
-            // Crear el registro de detalle
-            VentaDetalle detalle = new VentaDetalle();
-            detalle.setVenta(venta);
-            detalle.setProducto(producto);
-            detalle.setCantidad(item.getCantidad());
-            detalle.setPrecioUnitario(producto.getPrecio());
-            detalles.add(detalle);
         }
 
         venta.setDetalles(detalles);
