@@ -22,6 +22,7 @@ import com.posbarlacteo.PosBarLacteo.dto.RecetaRequestDTO;
 import com.posbarlacteo.PosBarLacteo.model.Empresa;
 import com.posbarlacteo.PosBarLacteo.model.Producto;
 import com.posbarlacteo.PosBarLacteo.model.Receta;
+import com.posbarlacteo.PosBarLacteo.repository.CategoriaRepository;
 import com.posbarlacteo.PosBarLacteo.repository.EmpresaRepository;
 import com.posbarlacteo.PosBarLacteo.repository.ProductoRepository;
 import com.posbarlacteo.PosBarLacteo.repository.RecetaRepository;
@@ -44,6 +45,7 @@ public class ProductoController {
 
     @Autowired
     private RecetaRepository recetaRepository;
+    @Autowired private CategoriaRepository categoriaRepository;
 
     @Autowired
     private EmpresaRepository empresaRepository;
@@ -179,12 +181,23 @@ public class ProductoController {
             @RequestParam(defaultValue = "1") Long empresaId 
     ) {
         Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + empresaId));
 
         Producto pPrincipal = request.getProductoPrincipal();
         pPrincipal.setEsInsumo(false);
         pPrincipal.setStock(0.0);
         pPrincipal.setEmpresa(empresa); 
+        
+        // 🟢 SEGURIDAD: Asignamos unidad de medida por defecto si llega nula
+        if (pPrincipal.getUnidadMedida() == null || pPrincipal.getUnidadMedida().trim().isEmpty()) {
+            pPrincipal.setUnidadMedida("UN");
+        }
+
+        // 🟢 SEGURIDAD: Buscamos y asignamos la categoría para evitar que quede en NULL en MySQL
+        if (pPrincipal.getCategoria() != null && pPrincipal.getCategoria().getId() != null) {
+            categoriaRepository.findById(pPrincipal.getCategoria().getId())
+                .ifPresent(pPrincipal::setCategoria);
+        }
         
         // 🛡️ CORRECCIÓN CLAVE: Evitar error 500 en MySQL convirtiendo "" a null
         if (pPrincipal.getCodigoBarras() != null && pPrincipal.getCodigoBarras().trim().isEmpty()) {
@@ -206,7 +219,7 @@ public class ProductoController {
                 Receta vinculo = new Receta();
                 vinculo.setProductoPrincipal(nuevoProducto); 
                 Producto insumo = productoRepository.findById(item.getInsumoId())
-                    .orElseThrow(() -> new RuntimeException("Insumo no existe"));
+                    .orElseThrow(() -> new RuntimeException("Insumo no existe con ID: " + item.getInsumoId()));
                 vinculo.setInsumo(insumo);
                 vinculo.setCantidadUsada(item.getCantidad());
                 recetaRepository.save(vinculo);
