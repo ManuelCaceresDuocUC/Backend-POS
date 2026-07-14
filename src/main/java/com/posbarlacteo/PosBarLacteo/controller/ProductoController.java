@@ -19,8 +19,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.posbarlacteo.PosBarLacteo.dto.RecetaRequestDTO;
+import com.posbarlacteo.PosBarLacteo.model.Empresa;
 import com.posbarlacteo.PosBarLacteo.model.Producto;
 import com.posbarlacteo.PosBarLacteo.model.Receta;
+import com.posbarlacteo.PosBarLacteo.repository.EmpresaRepository;
 import com.posbarlacteo.PosBarLacteo.repository.ProductoRepository;
 import com.posbarlacteo.PosBarLacteo.repository.RecetaRepository;
 
@@ -30,30 +32,34 @@ import jakarta.transaction.Transactional;
     "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com", // Producción AWS
     "http://localhost:5173",
     "http://34.203.91.138",
-    "https://ordpos.duckdns.org",                                             // PC Local
-    "http://192.168.100.85:5173"                                         // Tu Celular
+    "https://ordpos.duckdns.org",                                       // PC Local
+    "http://192.168.100.85:5173"                                        // Tu Celular
 })
 @RestController
 @RequestMapping("/api/productos")
-
 public class ProductoController {
+
     @Autowired
     private ProductoRepository productoRepository;
+
     @Autowired
     private RecetaRepository recetaRepository;
+
+    // ✨ CORRECCIÓN 1: Inyectamos el EmpresaRepository que faltaba y causaba el error de compilación
+    @Autowired
+    private EmpresaRepository empresaRepository;
+
     @GetMapping
     public Page<Producto> obtenerTodos(
             @RequestParam(required = false) Long categoriaId, 
-            @RequestParam(defaultValue = "1") Long empresaId, // ✨ NUEVO: Atrapamos la empresa
+            @RequestParam(defaultValue = "1") Long empresaId, 
             @RequestParam(defaultValue = "0") int page, 
             @RequestParam(defaultValue = "20") int size) {
         
-        // Si el frontend nos manda una categoría, usamos el filtro con empresa
         if (categoriaId != null) {
             return productoRepository.findByActivoTrueAndCategoriaIdAndEmpresaId(categoriaId, empresaId, PageRequest.of(page, size));
         }
         
-        // Si no mandan categoría, devolvemos todo el inventario de ESA empresa
         return productoRepository.findByActivoTrueAndEmpresaId(empresaId, PageRequest.of(page, size));
     }
 
@@ -79,21 +85,18 @@ public class ProductoController {
     }
     
     @PutMapping("/{id}/descontar")
-    @Transactional // IMPORTANTE: Para que si algo falla, no descuente nada
+    @Transactional 
     public Producto descontarStock(@PathVariable Long id, @RequestParam Double cantidad) {
         return productoRepository.findById(id)
             .map(producto -> {
-                // 1. BUSCAMOS SI ESTE PRODUCTO TIENE UNA RECETA
                 List<Receta> ingredientes = recetaRepository.findByProductoPrincipalId(id);
 
                 if (ingredientes.isEmpty()) {
-                    // CASO A: Es un producto simple (bebida, etc.)
                     if (producto.getStock() < cantidad) {
                         throw new RuntimeException("Stock insuficiente");
                     }
                     producto.setStock(producto.getStock() - cantidad);
                 } else {
-                    // CASO B: Es un producto compuesto (sándwich)
                     for (Receta item : ingredientes) {
                         Producto insumo = item.getInsumo();
                         Double cantidadAGastar = item.getCantidadUsada() * cantidad;
@@ -103,21 +106,19 @@ public class ProductoController {
                         }
                         
                         insumo.setStock(insumo.getStock() - cantidadAGastar);
-                        productoRepository.save(insumo); // Descontamos la palta, el pan, etc.
+                        productoRepository.save(insumo); 
                     }
-                    // Nota: El "stock" del sándwich podrías dejarlo en 0 o no usarlo,
-                    // ya que lo que importa es el stock de los insumos.
                 }
                 
                 return productoRepository.save(producto);
             })
             .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
     }
+
     @PatchMapping("/{id}")
     public Producto editarParcial(@PathVariable Long id, @RequestBody Producto productoActualizado) {
         return productoRepository.findById(id)
             .map(producto -> {
-                // Actualizamos solo los campos que vienen en el body
                 if (productoActualizado.getDescripcion() != null) producto.setDescripcion(productoActualizado.getDescripcion());
                 if (productoActualizado.getPrecio() != null) producto.setPrecio(productoActualizado.getPrecio());
                 if (productoActualizado.getStock() != null) producto.setStock(productoActualizado.getStock());
@@ -128,42 +129,53 @@ public class ProductoController {
             .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
     }
 
+    // ✨ CORRECCIÓN 2: Asignación de empresa al guardar un producto simple o insumo para evitar error 500
     @PostMapping
-    public Producto guardar(@RequestBody Producto producto) {
-        // Si el producto trae código de barras, verificamos que no esté duplicado
+    public Producto guardar(
+            @RequestBody Producto producto,
+            @RequestParam(defaultValue = "1") Long empresaId
+    ) {
+        // Asignamos la empresa si el objeto viene sin ella desde el frontend
+        if (producto.getEmpresa() == null) {
+            Empresa empresa = empresaRepository.findById(empresaId)
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + empresaId));
+            producto.setEmpresa(empresa);
+        }
+
+        // Validación de código de barras por empresa
         if (producto.getCodigoBarras() != null && !producto.getCodigoBarras().isEmpty()) {
-            Optional<Producto> existente = productoRepository.findByCodigoBarras(producto.getCodigoBarras());
+            Optional<Producto> existente = productoRepository.findByCodigoBarrasAndEmpresaId(producto.getCodigoBarras(), empresaId);
             if (existente.isPresent()) {
                 throw new RuntimeException("Ya existe un producto con el código: " + producto.getCodigoBarras());
             }
         }
         return productoRepository.save(producto);
     }
+
     @PostMapping("/con-receta")
     @Transactional
-    public Producto crearProductoConReceta(@RequestBody RecetaRequestDTO request) {
-        // 1. Guardamos el producto principal primero
+    public Producto crearProductoConReceta(
+            @RequestBody RecetaRequestDTO request,
+            @RequestParam(defaultValue = "1") Long empresaId 
+    ) {
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
         Producto pPrincipal = request.getProductoPrincipal();
         pPrincipal.setEsInsumo(false);
-        pPrincipal.setStock(0.0); // Stock físico inicial es 0 para productos con receta
+        pPrincipal.setStock(0.0);
+        pPrincipal.setEmpresa(empresa); 
         
-        // IMPORTANTE: 'nuevoProducto' ya tiene el ID generado por la DB
         Producto nuevoProducto = productoRepository.save(pPrincipal);
 
-        // 2. Vinculamos los ingredientes
         if (request.getIngredientes() != null && !request.getIngredientes().isEmpty()) {
             for (var item : request.getIngredientes()) {
                 Receta vinculo = new Receta();
-                
-                // ASIGNACIÓN CRÍTICA: Aquí conectamos el ID generado
                 vinculo.setProductoPrincipal(nuevoProducto); 
-                
                 Producto insumo = productoRepository.findById(item.getInsumoId())
-                    .orElseThrow(() -> new RuntimeException("Insumo ID " + item.getInsumoId() + " no existe"));
-                
+                    .orElseThrow(() -> new RuntimeException("Insumo no existe"));
                 vinculo.setInsumo(insumo);
                 vinculo.setCantidadUsada(item.getCantidad());
-                
                 recetaRepository.save(vinculo);
             }
         }
