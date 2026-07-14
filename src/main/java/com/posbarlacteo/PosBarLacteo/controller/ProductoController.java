@@ -45,7 +45,6 @@ public class ProductoController {
     @Autowired
     private RecetaRepository recetaRepository;
 
-    // ✨ CORRECCIÓN 1: Inyectamos el EmpresaRepository que faltaba y causaba el error de compilación
     @Autowired
     private EmpresaRepository empresaRepository;
 
@@ -75,6 +74,13 @@ public class ProductoController {
     public Producto actualizar(@PathVariable Long id, @RequestBody Producto productoActualizado) {
         return productoRepository.findById(id)
             .map(producto -> {
+                // 🛡️ CORRECCIÓN: Si actualizan el código de barras y viene vacío "", lo pasamos a null
+                if (productoActualizado.getCodigoBarras() != null && productoActualizado.getCodigoBarras().trim().isEmpty()) {
+                    producto.setCodigoBarras(null);
+                } else {
+                    producto.setCodigoBarras(productoActualizado.getCodigoBarras());
+                }
+
                 producto.setDescripcion(productoActualizado.getDescripcion());
                 producto.setPrecio(productoActualizado.getPrecio());
                 producto.setStock(productoActualizado.getStock());
@@ -124,12 +130,20 @@ public class ProductoController {
                 if (productoActualizado.getStock() != null) producto.setStock(productoActualizado.getStock());
                 if (productoActualizado.getStockCritico() != null) producto.setStockCritico(productoActualizado.getStockCritico());
                 
+                // 🛡️ CORRECCIÓN: Manejo seguro en edición parcial del código de barras
+                if (productoActualizado.getCodigoBarras() != null) {
+                    if (productoActualizado.getCodigoBarras().trim().isEmpty()) {
+                        producto.setCodigoBarras(null);
+                    } else {
+                        producto.setCodigoBarras(productoActualizado.getCodigoBarras());
+                    }
+                }
+                
                 return productoRepository.save(producto);
             })
             .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
     }
 
-    // ✨ CORRECCIÓN 2: Asignación de empresa al guardar un producto simple o insumo para evitar error 500
     @PostMapping
     public Producto guardar(
             @RequestBody Producto producto,
@@ -142,13 +156,19 @@ public class ProductoController {
             producto.setEmpresa(empresa);
         }
 
-        // Validación de código de barras por empresa
-        if (producto.getCodigoBarras() != null && !producto.getCodigoBarras().isEmpty()) {
+        // 🛡️ CORRECCIÓN CLAVE: Si el código de barras es "" o solo espacios en blanco, lo convertimos en null
+        if (producto.getCodigoBarras() != null && producto.getCodigoBarras().trim().isEmpty()) {
+            producto.setCodigoBarras(null);
+        }
+
+        // Validación de código de barras por empresa (solo si el código no es null)
+        if (producto.getCodigoBarras() != null) {
             Optional<Producto> existente = productoRepository.findByCodigoBarrasAndEmpresaId(producto.getCodigoBarras(), empresaId);
             if (existente.isPresent()) {
                 throw new RuntimeException("Ya existe un producto con el código: " + producto.getCodigoBarras());
             }
         }
+
         return productoRepository.save(producto);
     }
 
@@ -165,6 +185,19 @@ public class ProductoController {
         pPrincipal.setEsInsumo(false);
         pPrincipal.setStock(0.0);
         pPrincipal.setEmpresa(empresa); 
+        
+        // 🛡️ CORRECCIÓN CLAVE: Evitar error 500 en MySQL convirtiendo "" a null
+        if (pPrincipal.getCodigoBarras() != null && pPrincipal.getCodigoBarras().trim().isEmpty()) {
+            pPrincipal.setCodigoBarras(null);
+        }
+
+        // Validación extra de código duplicado al crear con receta
+        if (pPrincipal.getCodigoBarras() != null) {
+            Optional<Producto> existente = productoRepository.findByCodigoBarrasAndEmpresaId(pPrincipal.getCodigoBarras(), empresaId);
+            if (existente.isPresent()) {
+                throw new RuntimeException("Ya existe un producto con el código: " + pPrincipal.getCodigoBarras());
+            }
+        }
         
         Producto nuevoProducto = productoRepository.save(pPrincipal);
 
