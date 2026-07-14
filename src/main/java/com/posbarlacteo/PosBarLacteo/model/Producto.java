@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -59,8 +58,9 @@ public class Producto {
     @JoinColumn(name = "venta_id")
     private Venta venta;
 
-    @JsonManagedReference
     @OneToMany(mappedBy = "productoPrincipal", cascade = CascadeType.ALL, orphanRemoval = true)
+    // AGREGAR ESTO:
+    @JsonIgnoreProperties({"productoPrincipal"})
     private List<Receta> receta;
 
     @ManyToOne
