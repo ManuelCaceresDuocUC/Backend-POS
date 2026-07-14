@@ -28,11 +28,20 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // 1. Endpoint público de acceso
                 .requestMatchers("/api/usuarios/login").permitAll() 
                 
-                // ✨ AGREGADO: Permitir que los administradores accedan a la administración y la caja
-                .requestMatchers("/api/caja/**", "/api/admin/**", "/api/reportes/**", "/api/inventario/**").hasRole("ADMIN")
+                // 2. Rutas EXCLUSIVAS para Administradores (supervisión y reportes)
+                // ✨ CAMBIO CLAVE: En lugar de bloquear todo "/api/caja/**", restringimos ÚNICAMENTE el historial
+                .requestMatchers(
+                    "/api/caja/historial", 
+                    "/api/admin/**", 
+                    "/api/reportes/**", 
+                    "/api/inventario/**"
+                ).hasRole("ADMIN")
                 
+                // 3. Operativa del POS (/api/caja/abrir, /api/caja/estado, ventas, notas, etc.)
+                // Solo requerirá que el empleado tenga un token JWT válido (sea Vendedor, Cajero o Admin)
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
