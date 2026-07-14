@@ -93,7 +93,9 @@ public class CajaService {
 
         turnoCajaRepository.save(turnoAbierto);
     }
-
+    public java.util.List<TurnoCaja> obtenerHistorial(Long empresaId) {
+        return turnoCajaRepository.findByEmpresaIdOrderByIdDesc(empresaId);
+    }
     public ResumenCajaDTO obtenerResumen(Long cajeroId) {
         TurnoCaja turnoAbierto = turnoCajaRepository.findByCajeroIdAndEstado(cajeroId, "ABIERTA")
                 .orElseThrow(() -> new RuntimeException("No hay ninguna caja abierta."));

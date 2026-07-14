@@ -28,12 +28,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/usuarios/login").permitAll() // Login abierto a todos
+                .requestMatchers("/api/usuarios/login").permitAll() 
                 
-                // EJEMPLO DE PROTECCIÓN: Solo quienes tengan el rol 'ADMIN' acceden a esto
-                .requestMatchers("/api/reportes/**", "/api/inventario/**").hasRole("ADMIN")
+                // ✨ AGREGADO: Permitir que los administradores accedan a la administración y la caja
+                .requestMatchers("/api/caja/**", "/api/admin/**", "/api/reportes/**", "/api/inventario/**").hasRole("ADMIN")
                 
-                // Cualquier otra solicitud requerirá estar autenticado como mínimo
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

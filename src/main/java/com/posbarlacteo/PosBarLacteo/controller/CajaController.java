@@ -82,4 +82,12 @@ public class CajaController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+    @GetMapping("/historial")
+    public ResponseEntity<?> obtenerHistorial(@RequestParam Long empresaId) {
+        try {
+            return ResponseEntity.ok(cajaService.obtenerHistorial(empresaId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
