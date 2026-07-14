@@ -1,6 +1,7 @@
 package com.posbarlacteo.PosBarLacteo.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,6 +30,7 @@ public class Receta {
 
     @ManyToOne
     @JoinColumn(name = "insumo_id")
+    @JsonIgnoreProperties({"receta", "empresa", "categoria", "hibernateLazyInitializer", "handler"})
     private Producto insumo;
 
     @Column(name = "cantidad_usada")
