@@ -67,7 +67,9 @@ public class SecurityConfig {
             "http://192.168.*:*",
             "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com",
             "http://34.203.91.138",
-            "https://ordpos.duckdns.org"
+            "https://ordpos.duckdns.org",
+            "https://kipipos.duckdns.org", // ✨ AGREGAR ESTE DOMINIO
+            "http://kipipos.duckdns.org"   // ✨ AGREGAR VERSIÓN HTTP
         ));
         
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
