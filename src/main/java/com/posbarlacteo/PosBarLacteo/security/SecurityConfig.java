@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // ✨ Importante para permitir OPTIONS
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -28,15 +29,17 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 1. Endpoints públicos de acceso y registro (✨ SOLUCIÓN)
+                // ✨ 1. PERMITIR PREFLIGHT (OPTIONS) DE CORS SIEMPRE
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // ✨ 2. ENDPOINTS PÚBLICOS (Agrega todas las variantes posibles de tu ruta)
                 .requestMatchers(
                     "/api/usuarios/login",
-                    "/api/auth/registrar-empresa", // Agrega la ruta exacta de tu backend
-                    "/auth/registrar-empresa",     // Por si no usa el prefijo /api
-                    "/api/auth/**"                 // O puedes permitir todo el controlador de auth
+                    "/api/auth/**",
+                    "/auth/**"
                 ).permitAll() 
                 
-                // 2. Rutas EXCLUSIVAS para Administradores
+                // 3. Rutas de Administración
                 .requestMatchers(
                     "/api/caja/historial", 
                     "/api/admin/**", 
@@ -44,7 +47,7 @@ public class SecurityConfig {
                     "/api/inventario/**"
                 ).hasRole("ADMIN")
                 
-                // 3. Operativa del POS
+                // 4. Operativa general del POS
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -55,14 +58,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
+        
+        // ✨ 5. CAMBIO CLAVE: Usar OriginPatterns con comodines (*) 
+        // Permite cualquier puerto en localhost, 127.0.0.1 y tu red local sin romper allowCredentials=true
+        config.setAllowedOriginPatterns(List.of(
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+            "http://192.168.*:*",
             "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com",
-            "http://localhost:5173",
             "http://34.203.91.138",
-            "https://ordpos.duckdns.org",
-            "http://192.168.100.85:5173"
+            "https://ordpos.duckdns.org"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
         
