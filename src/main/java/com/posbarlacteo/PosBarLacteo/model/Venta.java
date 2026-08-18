@@ -58,6 +58,9 @@ public class Venta {
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
+    @ManyToOne
+    @JoinColumn(name = "cliente_id", nullable = true)
+    private Cliente cliente;
 
     public Empresa getEmpresa() { return empresa; }
     public void setEmpresa(Empresa empresa) { this.empresa = empresa; }

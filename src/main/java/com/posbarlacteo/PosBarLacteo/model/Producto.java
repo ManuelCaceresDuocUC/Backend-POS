@@ -36,7 +36,7 @@ public class Producto {
     private String unidadMedida;
 
     @Column(name = "es_insumo")
-    private boolean esInsumo;
+    private Boolean esInsumo;
 
     @Column(nullable = false)
     private String descripcion;
@@ -51,7 +51,7 @@ public class Producto {
     private Double stockCritico;
 
     @Column(name = "activo")
-    private boolean activo = true;
+    private Boolean activo = true;
 
     @JsonIgnore 
     @ManyToOne

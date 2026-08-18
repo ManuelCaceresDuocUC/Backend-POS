@@ -45,7 +45,9 @@ public class ProductoController {
 
     @Autowired
     private RecetaRepository recetaRepository;
-    @Autowired private CategoriaRepository categoriaRepository;
+    
+    @Autowired 
+    private CategoriaRepository categoriaRepository;
 
     @Autowired
     private EmpresaRepository empresaRepository;
@@ -87,6 +89,12 @@ public class ProductoController {
                 producto.setPrecio(productoActualizado.getPrecio());
                 producto.setStock(productoActualizado.getStock());
                 producto.setStockCritico(productoActualizado.getStockCritico());
+                
+                // 🟢 CORRECCIÓN: Actualización de campos faltantes
+                producto.setCategoria(productoActualizado.getCategoria());
+                producto.setUnidadMedida(productoActualizado.getUnidadMedida());
+                producto.setEsInsumo(productoActualizado.getEsInsumo());
+                
                 return productoRepository.save(producto);
             })
             .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
@@ -100,19 +108,14 @@ public class ProductoController {
                 List<Receta> ingredientes = recetaRepository.findByProductoPrincipalId(id);
 
                 if (ingredientes.isEmpty()) {
-                    if (producto.getStock() < cantidad) {
-                        throw new RuntimeException("Stock insuficiente");
-                    }
+                    // 🟢 Descuenta directamente, permitiendo valores negativos
                     producto.setStock(producto.getStock() - cantidad);
                 } else {
                     for (Receta item : ingredientes) {
                         Producto insumo = item.getInsumo();
                         Double cantidadAGastar = item.getCantidadUsada() * cantidad;
 
-                        if (insumo.getStock() < cantidadAGastar) {
-                            throw new RuntimeException("No hay suficiente " + insumo.getDescripcion());
-                        }
-                        
+                        // 🟢 Descuenta el insumo permitiendo valores negativos
                         insumo.setStock(insumo.getStock() - cantidadAGastar);
                         productoRepository.save(insumo); 
                     }
@@ -131,6 +134,13 @@ public class ProductoController {
                 if (productoActualizado.getPrecio() != null) producto.setPrecio(productoActualizado.getPrecio());
                 if (productoActualizado.getStock() != null) producto.setStock(productoActualizado.getStock());
                 if (productoActualizado.getStockCritico() != null) producto.setStockCritico(productoActualizado.getStockCritico());
+                
+                // 🟢 CORRECCIÓN: Actualización de campos faltantes (Unidad de Medida e Insumo)
+                if (productoActualizado.getUnidadMedida() != null) producto.setUnidadMedida(productoActualizado.getUnidadMedida());
+                if (productoActualizado.getEsInsumo() != null) {producto.setEsInsumo(productoActualizado.getEsInsumo());}
+
+                // 🟢 CORRECCIÓN CLAVE: Asignación directa para permitir que envíe 'null' y quite la categoría
+                producto.setCategoria(productoActualizado.getCategoria());
                 
                 // 🛡️ CORRECCIÓN: Manejo seguro en edición parcial del código de barras
                 if (productoActualizado.getCodigoBarras() != null) {

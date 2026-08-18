@@ -13,7 +13,7 @@ public class PagoRequest {
     
     private Long usuarioId;
     private Long empresaId; // ✨ Agrega esto si no existe
-
+    private Long clienteId;
     public Long getEmpresaId() {
         return empresaId;
     }

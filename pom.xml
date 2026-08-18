@@ -118,7 +118,16 @@
             <version>0.11.5</version>
             <scope>runtime</scope>
         </dependency>
-			
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itextpdf</artifactId>
+			<version>5.5.13.3</version> <!-- Use the latest 5.x version -->
+		</dependency>
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>2.0.30</version>
+		</dependency>
 		</dependencies>
 
 	<build>

@@ -42,13 +42,20 @@ public class TurnoCaja {
     @Column(name = "ventas_tarjeta")
     private BigDecimal ventasTarjeta = BigDecimal.ZERO;
 
+    @Column(name = "ventas_credito")
+    private BigDecimal ventasCredito = BigDecimal.ZERO;
+
     @Column(name = "ingresos_extra")
     private BigDecimal ingresosExtra = BigDecimal.ZERO;
+
+    // ✨ NUEVO: Campo para registrar los abonos a crédito pagados en esta caja
+    @Column(name = "abonos_credito")
+    private BigDecimal abonosCredito = BigDecimal.ZERO;
 
     @Column(name = "retiros")
     private BigDecimal retiros = BigDecimal.ZERO;
 
-    // ✨ NUEVO: Campos para el cierre y cuadratura de caja
+    // Campos para el cierre y cuadratura de caja
     @Column(name = "total_sistema")
     private BigDecimal totalSistema;
 
@@ -91,13 +98,19 @@ public class TurnoCaja {
     public BigDecimal getVentasTarjeta() { return ventasTarjeta; }
     public void setVentasTarjeta(BigDecimal ventasTarjeta) { this.ventasTarjeta = ventasTarjeta; }
 
+    public BigDecimal getVentasCredito() { return ventasCredito; }
+    public void setVentasCredito(BigDecimal ventasCredito) { this.ventasCredito = ventasCredito; }
+
     public BigDecimal getIngresosExtra() { return ingresosExtra; }
     public void setIngresosExtra(BigDecimal ingresosExtra) { this.ingresosExtra = ingresosExtra; }
+
+    // ✨ NUEVO: Getter y Setter de abonosCredito
+    public BigDecimal getAbonosCredito() { return abonosCredito; }
+    public void setAbonosCredito(BigDecimal abonosCredito) { this.abonosCredito = abonosCredito; }
 
     public BigDecimal getRetiros() { return retiros; }
     public void setRetiros(BigDecimal retiros) { this.retiros = retiros; }
 
-    // ✨ Getters y Setters de los nuevos campos de cuadratura
     public BigDecimal getTotalSistema() { return totalSistema; }
     public void setTotalSistema(BigDecimal totalSistema) { this.totalSistema = totalSistema; }
 

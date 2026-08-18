@@ -15,17 +15,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.posbarlacteo.PosBarLacteo.dto.PagoRequest;
 import com.posbarlacteo.PosBarLacteo.model.Producto;
+import com.posbarlacteo.PosBarLacteo.model.Venta;
 import com.posbarlacteo.PosBarLacteo.repository.ProductoRepository;
 import com.posbarlacteo.PosBarLacteo.service.FacturacionService;
-import com.posbarlacteo.PosBarLacteo.service.VentaService; 
+import com.posbarlacteo.PosBarLacteo.service.ValeCreditoPdfService;
+import com.posbarlacteo.PosBarLacteo.service.VentaService;
 
 @RestController
 @CrossOrigin(origins = {
     "http://posbarlacteo-manuel-2026.s3-website-us-east-1.amazonaws.com",
     "http://localhost:5173",
     "http://34.203.91.138",
-    "https://ordpos.duckdns.org",                                             
-    "http://192.168.100.85:5173"                                         
+    "https://ordpos.duckdns.org",
+    "http://192.168.100.85:5173"
 })
 @RequestMapping("/api/pagos")
 public class PagoController {
@@ -33,37 +35,42 @@ public class PagoController {
     private final VentaService ventaService;
     private final FacturacionService facturacionService; 
     private final ProductoRepository productoRepository;
+    private final ValeCreditoPdfService valeCreditoPdfService;
 
+    // Inyección recomendada por constructor
     public PagoController(VentaService ventaService, 
                           FacturacionService facturacionService,
-                          ProductoRepository productoRepository) {
+                          ProductoRepository productoRepository,
+                          ValeCreditoPdfService valeCreditoPdfService) {
         this.ventaService = ventaService;
         this.facturacionService = facturacionService;
         this.productoRepository = productoRepository;
+        this.valeCreditoPdfService = valeCreditoPdfService;
     }
 
     @PostMapping("/efectivo")
     public ResponseEntity<?> procesarEfectivo(@RequestBody PagoRequest request) {
         try {
+            // ✨ Se envía request.getClienteId() como 6to parámetro (puede ser null)
             ventaService.procesarVentaCompleta(
-            request.getItems(), 
-            (double) request.getMonto(), 
-            "EFECTIVO", 
-            request.getUsuarioId(),
-            request.getEmpresaId() // ✨ Nuevo parámetro
-        );
+                request.getItems(), 
+                (double) request.getMonto(), 
+                "EFECTIVO", 
+                request.getUsuarioId(),
+                request.getEmpresaId(),
+                request.getClienteId()
+            );
 
             Map<String, Object> payloadBoleta = construirPayloadHaulmer(request);
             Map<String, Object> respuestaSii = facturacionService.emitirBoleta(payloadBoleta);
 
-            // ✨ EXTRAEMOS EL PDF PARA MANDARLO AL FRONTEND
             String base64Pdf = respuestaSii != null ? (String) respuestaSii.get("PDF") : "";
 
             return ResponseEntity.ok(Map.of(
                 "status", "success", 
                 "message", "Venta en efectivo registrada y boleta emitida",
                 "boleta", respuestaSii,
-                "boletaPdf", base64Pdf // ✨ AQUÍ LO ENVIAMOS CON EL NOMBRE QUE REACT ESPERA
+                "boletaPdf", base64Pdf
             ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", e.getMessage()));
@@ -77,26 +84,59 @@ public class PagoController {
                 throw new Exception("El carrito está vacío");
             }
             
+            // ✨ Se envía request.getClienteId() como 6to parámetro (puede ser null)
             ventaService.procesarVentaCompleta(
-            request.getItems(), 
-            (double) request.getMonto(), 
-            "TARJETA", 
-            request.getUsuarioId(),
-            request.getEmpresaId() // ✨ Nuevo parámetro
-        );
+                request.getItems(), 
+                (double) request.getMonto(), 
+                "TARJETA", 
+                request.getUsuarioId(),
+                request.getEmpresaId(),
+                request.getClienteId()
+            );
             
             Map<String, Object> payloadBoleta = construirPayloadHaulmer(request);
             Map<String, Object> respuestaSii = facturacionService.emitirBoleta(payloadBoleta);
             
-            // ✨ EXTRAEMOS EL PDF PARA MANDARLO AL FRONTEND
             String base64Pdf = respuestaSii != null ? (String) respuestaSii.get("PDF") : "";
             
             return ResponseEntity.ok(Map.of(
                 "status", "success", 
                 "message", "Venta con tarjeta registrada y boleta emitida",
                 "boleta", respuestaSii,
-                "boletaPdf", base64Pdf // ✨ AQUÍ LO ENVIAMOS CON EL NOMBRE QUE REACT ESPERA
+                "boletaPdf", base64Pdf
             ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/credito")
+    public ResponseEntity<?> procesarCredito(@RequestBody PagoRequest request) {
+        try {
+            if (request.getClienteId() == null) {
+                throw new Exception("El ID del cliente es obligatorio para ventas a crédito");
+            }
+            
+            // 1. Procesar la venta en la base de datos
+            Venta venta = ventaService.procesarVentaCompleta(
+                request.getItems(), 
+                (double) request.getMonto(), 
+                "CREDITO", 
+                request.getUsuarioId(),
+                request.getEmpresaId(),
+                request.getClienteId() 
+            );
+
+            // 2. Generar el PDF en disco local e imprimirlo
+            String rutaPdf = valeCreditoPdfService.generarGuardarYImprimirVale(venta, "Bartolo Hyatt");
+
+            // 3. Responder al frontend
+            return ResponseEntity.ok(Map.of(
+                "status", "success", 
+                "message", "Venta a crédito registrada exitosamente. El vale se guardó e imprimió automáticamente.",
+                "rutaArchivo", rutaPdf != null ? rutaPdf : "Guardado en disco local"
+            ));
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", e.getMessage()));
         }
@@ -104,7 +144,6 @@ public class PagoController {
 
     private Map<String, Object> construirPayloadHaulmer(PagoRequest request) throws Exception {
         Map<String, Object> payload = new HashMap<>();
-        
         Map<String, Object> encabezado = new HashMap<>();
         
         Map<String, Object> idDoc = new HashMap<>();
@@ -140,7 +179,6 @@ public class PagoController {
             detalle.put("MontoItem", montoItem);
             
             sumaTotalVenta += montoItem; 
-            
             detallesSii.add(detalle);
         }
 
